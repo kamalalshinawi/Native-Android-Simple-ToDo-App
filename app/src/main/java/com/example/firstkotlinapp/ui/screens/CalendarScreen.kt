@@ -11,21 +11,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.firstkotlinapp.data.CalendarEvent
+import com.example.firstkotlinapp.ui.viewmodel.MainViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen() {
-    var events by remember { mutableStateOf(listOf(
-        CalendarEvent(1, "Dentist Appointment", LocalDate.now(), "Routine checkup"),
-        CalendarEvent(2, "Project Meeting", LocalDate.now().plusDays(1), "Discuss architecture"),
-        CalendarEvent(3, "Birthday Party", LocalDate.now().plusDays(2), "Gift required")
-    )) }
-    
-    var showAddDialog by remember { mutableStateOf(false) }
-    var newEventTitle by remember { mutableStateOf("") }
-    var newEventDesc by remember { mutableStateOf("") }
+fun CalendarScreen(viewModel: MainViewModel) {
+    val events by viewModel.events
+    var showAddDialog by viewModel.showAddEventDialog
+    var newEventTitle by viewModel.newEventTitle
+    var newEventDesc by viewModel.newEventDesc
 
     Scaffold(
         topBar = {
@@ -35,7 +31,8 @@ fun CalendarScreen() {
             FloatingActionButton(onClick = { showAddDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Event")
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (showAddDialog) {
             AlertDialog(
@@ -45,32 +42,19 @@ fun CalendarScreen() {
                     Column {
                         TextField(
                             value = newEventTitle,
-                            onValueChange = { newEventTitle = it },
+                            onValueChange = { viewModel.newEventTitle.value = it },
                             label = { Text("Event Title") }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         TextField(
                             value = newEventDesc,
-                            onValueChange = { newEventDesc = it },
+                            onValueChange = { viewModel.newEventDesc.value = it },
                             label = { Text("Description") }
                         )
                     }
                 },
                 confirmButton = {
-                    Button(onClick = {
-                        if (newEventTitle.isNotBlank()) {
-                            val newId = (events.maxOfOrNull { it.id } ?: 0) + 1
-                            events = events + CalendarEvent(
-                                id = newId,
-                                title = newEventTitle,
-                                date = LocalDate.now(), // Simplified for now
-                                description = newEventDesc
-                            )
-                            newEventTitle = ""
-                            newEventDesc = ""
-                            showAddDialog = false
-                        }
-                    }) {
+                    Button(onClick = { viewModel.addEvent() }) {
                         Text("Add")
                     }
                 },
@@ -87,7 +71,6 @@ fun CalendarScreen() {
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            // Simple Month View Placeholder
             Text(
                 text = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy")),
                 style = MaterialTheme.typography.headlineMedium,
@@ -107,11 +90,19 @@ fun CalendarScreen() {
 
 @Composable
 fun EventItem(event: CalendarEvent) {
-    ListItem(
-        headlineContent = { Text(event.title) },
-        supportingContent = { Text("${event.date.format(DateTimeFormatter.ofPattern("MMM dd"))} - ${event.description}") },
-        leadingContent = {
-            Icon(Icons.Default.DateRange, contentDescription = null)
-        }
-    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        ListItem(
+            headlineContent = { Text(event.title) },
+            supportingContent = { Text("${event.date.format(DateTimeFormatter.ofPattern("MMM dd"))} - ${event.description}") },
+            leadingContent = {
+                Icon(Icons.Default.DateRange, contentDescription = null)
+            },
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
+        )
+    }
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -12,32 +13,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.firstkotlinapp.data.ToDoTask
+import com.example.firstkotlinapp.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ToDoScreen() {
-    var tasks by remember { mutableStateOf(listOf(
-        ToDoTask(1, "Buy groceries"),
-        ToDoTask(2, "Finish Android project"),
-        ToDoTask(3, "Call Mom")
-    )) }
-    var newTaskTitle by remember { mutableStateOf("") }
+fun ToDoScreen(viewModel: MainViewModel) {
+    val tasks by viewModel.tasks
+    var newTaskTitle by viewModel.newTaskTitle
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("To-Do List") })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                if (newTaskTitle.isNotBlank()) {
-                    val newId = (tasks.maxOfOrNull { it.id } ?: 0) + 1
-                    tasks = tasks + ToDoTask(newId, newTaskTitle)
-                    newTaskTitle = ""
-                }
-            }) {
+            FloatingActionButton(onClick = { viewModel.addTask() }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Task")
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -46,22 +39,22 @@ fun ToDoScreen() {
         ) {
             TextField(
                 value = newTaskTitle,
-                onValueChange = { newTaskTitle = it },
+                onValueChange = { viewModel.newTaskTitle.value = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Enter new task...") }
+                placeholder = { Text("Enter new task...") },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
             LazyColumn {
                 items(tasks, key = { it.id }) { task ->
                     TaskItem(
                         task = task,
-                        onCheckedChange = { checked ->
-                            tasks = tasks.map { if (it.id == task.id) it.copy(isCompleted = checked) else it }
-                        },
-                        onDelete = {
-                            tasks = tasks.filter { it.id != task.id }
-                        }
+                        onCheckedChange = { checked -> viewModel.toggleTask(task.id, checked) },
+                        onDelete = { viewModel.deleteTask(task.id) }
                     )
                 }
             }
@@ -71,23 +64,30 @@ fun ToDoScreen() {
 
 @Composable
 fun TaskItem(task: ToDoTask, onCheckedChange: (Boolean) -> Unit, onDelete: () -> Unit) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Checkbox(
-            checked = task.isCompleted,
-            onCheckedChange = onCheckedChange
-        )
-        Text(
-            text = task.title,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge
-        )
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = task.isCompleted,
+                onCheckedChange = onCheckedChange
+            )
+            Text(
+                text = task.title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete")
+            }
         }
     }
 }

@@ -12,32 +12,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.firstkotlinapp.data.Habit
+import com.example.firstkotlinapp.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HabitTrackerScreen() {
-    var habits by remember { mutableStateOf(listOf(
-        Habit(1, "Drink 2L Water", 5, true),
-        Habit(2, "Read 20 pages", 3, false),
-        Habit(3, "Morning Run", 10, true)
-    )) }
-    var newHabitName by remember { mutableStateOf("") }
+fun HabitTrackerScreen(viewModel: MainViewModel) {
+    val habits by viewModel.habits
+    var newHabitName by viewModel.newHabitName
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Habit Tracker") })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                if (newHabitName.isNotBlank()) {
-                    val newId = (habits.maxOfOrNull { it.id } ?: 0) + 1
-                    habits = habits + Habit(newId, newHabitName)
-                    newHabitName = ""
-                }
-            }) {
+            FloatingActionButton(onClick = { viewModel.addHabit() }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Habit")
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -46,27 +38,21 @@ fun HabitTrackerScreen() {
         ) {
             TextField(
                 value = newHabitName,
-                onValueChange = { newHabitName = it },
+                onValueChange = { viewModel.newHabitName.value = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Enter new habit...") }
+                placeholder = { Text("Enter new habit...") },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
             LazyColumn {
                 items(habits, key = { it.id }) { habit ->
                     HabitItem(
                         habit = habit,
-                        onToggle = {
-                            habits = habits.map {
-                                if (it.id == habit.id) {
-                                    val newCompleted = !it.isCompletedToday
-                                    it.copy(
-                                        isCompletedToday = newCompleted,
-                                        streak = if (newCompleted) it.streak + 1 else it.streak - 1
-                                    )
-                                } else it
-                            }
-                        }
+                        onToggle = { viewModel.toggleHabit(habit.id) }
                     )
                 }
             }
@@ -79,8 +65,9 @@ fun HabitItem(habit: Habit, onToggle: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
