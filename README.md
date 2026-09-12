@@ -38,9 +38,6 @@ A simple, efficient Android application built with Jetpack Compose to help users
 **Problem**: Implementing the Calendar required robust date handling, but standard `java.time` APIs were causing issues on older Android versions.
 **Solution**: Increased the `minSdk` to **26** to leverage native Java 8 Time APIs, ensuring reliable date formatting and manipulation for the calendar features.
 
-## 📸 Screenshots
-
-*(Add your screenshots here)*
 
 ## 🛠 Installation
 
